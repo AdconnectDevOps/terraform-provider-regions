@@ -1,4 +1,4 @@
-# terraform-provider-dnsimple-regions
+# terraform-provider-regions
 
 added regions to default dnsimple terraform provider
 
