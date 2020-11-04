@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/hashicorp/terraform/plugin"
-	"github.com/terraform-provider-dnsimple-regions/dnsimple"
+	"github.com/terraform-provider-regions/dnsimple"
 )
 
 func main() {
