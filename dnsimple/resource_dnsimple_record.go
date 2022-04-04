@@ -1,13 +1,14 @@
 package dnsimple
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"strconv"
 	"strings"
 
 	"github.com/dnsimple/dnsimple-go/dnsimple"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 func resourceDNSimpleRecord() *schema.Resource {
@@ -54,7 +55,10 @@ func resourceDNSimpleRecord() *schema.Resource {
 			},
 
 			"regions": {
-				Type:     schema.TypeString,
+				Type: schema.TypeList,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
 				Required: true,
 			},
 
@@ -75,13 +79,23 @@ func resourceDNSimpleRecord() *schema.Resource {
 
 func resourceDNSimpleRecordCreate(d *schema.ResourceData, meta interface{}) error {
 	provider := meta.(*Client)
+	name := d.Get("name").(string)
+	domain := d.Get("domain").(string)
+
+	regionsRaw := d.Get("regions").([]interface{})
+	regions := make([]string, len(regionsRaw))
+	for i, raw := range regionsRaw {
+		regions[i] = raw.(string)
+	}
+	log.Printf("DNSimple: Region %#v", regions)
 
 	// Create the new record
-	newRecord := dnsimple.ZoneRecord{
-		Name:    d.Get("name").(string),
+	newRecord := dnsimple.ZoneRecordAttributes{
+		ZoneID:  domain,
 		Type:    d.Get("type").(string),
+		Name:    &name,
 		Content: d.Get("value").(string),
-		Regions: []string{d.Get("regions").(string)},
+		Regions: regions,
 	}
 
 	if attr, ok := d.GetOk("ttl"); ok {
@@ -94,14 +108,13 @@ func resourceDNSimpleRecordCreate(d *schema.ResourceData, meta interface{}) erro
 
 	log.Printf("[DEBUG] DNSimple Record create configuration: %#v", newRecord)
 
-	resp, err := provider.client.Zones.CreateRecord(provider.config.Account, d.Get("domain").(string), newRecord)
+	resp, err := provider.client.Zones.CreateRecord(context.Background(), provider.config.Account, domain, newRecord)
 	if err != nil {
 		return fmt.Errorf("Failed to create DNSimple Record: %s", err)
 	}
 
-	d.SetId(strconv.Itoa(resp.Data.ID))
+	d.SetId(strconv.FormatInt(resp.Data.ID, 10))
 	log.Printf("[INFO] DNSimple Record ID: %s", d.Id())
-
 	return resourceDNSimpleRecordRead(d, meta)
 }
 
@@ -112,8 +125,9 @@ func resourceDNSimpleRecordRead(d *schema.ResourceData, meta interface{}) error 
 	if err != nil {
 		return fmt.Errorf("Error converting Record ID: %s", err)
 	}
+	log.Printf("[INFO] DNSimple Record ID: %s", d.Id())
 
-	resp, err := provider.client.Zones.GetRecord(provider.config.Account, d.Get("domain").(string), recordID)
+	resp, err := provider.client.Zones.GetRecord(context.Background(), provider.config.Account, d.Get("domain").(string), int64(recordID))
 	if err != nil {
 		if err != nil && strings.Contains(err.Error(), "404") {
 			log.Printf("DNSimple Record Not Found - Refreshing from State")
@@ -122,6 +136,7 @@ func resourceDNSimpleRecordRead(d *schema.ResourceData, meta interface{}) error 
 		}
 		return fmt.Errorf("Couldn't find DNSimple Record: %s", err)
 	}
+	log.Printf("[INFO] DNSimple raw responce: %s", resp)
 
 	record := resp.Data
 	d.Set("domain_id", record.ZoneID)
@@ -137,7 +152,6 @@ func resourceDNSimpleRecordRead(d *schema.ResourceData, meta interface{}) error 
 	} else {
 		d.Set("hostname", fmt.Sprintf("%s.%s", record.Name, d.Get("domain").(string)))
 	}
-
 	return nil
 }
 
@@ -149,10 +163,17 @@ func resourceDNSimpleRecordUpdate(d *schema.ResourceData, meta interface{}) erro
 		return fmt.Errorf("Error converting Record ID: %s", err)
 	}
 
-	updateRecord := dnsimple.ZoneRecord{}
+	regionsRaw := d.Get("regions").([]interface{})
+	regions := make([]string, len(regionsRaw))
+	for i, raw := range regionsRaw {
+		regions[i] = raw.(string)
+	}
+	log.Printf("DNSimple: Region %#v", regions)
+
+	updateRecord := dnsimple.ZoneRecordAttributes{}
 
 	if attr, ok := d.GetOk("name"); ok {
-		updateRecord.Name = attr.(string)
+		updateRecord.ZoneID = attr.(string)
 	}
 	if attr, ok := d.GetOk("type"); ok {
 		updateRecord.Type = attr.(string)
@@ -160,9 +181,8 @@ func resourceDNSimpleRecordUpdate(d *schema.ResourceData, meta interface{}) erro
 	if attr, ok := d.GetOk("value"); ok {
 		updateRecord.Content = attr.(string)
 	}
-	if attr, ok := d.GetOk("regions"); ok {
-		updateRecord.Regions = []string{attr.(string)}
-	}
+
+	updateRecord.Regions = regions
 
 	if attr, ok := d.GetOk("ttl"); ok {
 		updateRecord.TTL, _ = strconv.Atoi(attr.(string))
@@ -174,7 +194,7 @@ func resourceDNSimpleRecordUpdate(d *schema.ResourceData, meta interface{}) erro
 
 	log.Printf("[DEBUG] DNSimple Record update configuration: %#v", updateRecord)
 
-	_, err = provider.client.Zones.UpdateRecord(provider.config.Account, d.Get("domain").(string), recordID, updateRecord)
+	_, err = provider.client.Zones.UpdateRecord(context.Background(), provider.config.Account, d.Get("domain").(string), int64(recordID), updateRecord)
 	if err != nil {
 		return fmt.Errorf("Failed to update DNSimple Record: %s", err)
 	}
@@ -192,11 +212,10 @@ func resourceDNSimpleRecordDelete(d *schema.ResourceData, meta interface{}) erro
 		return fmt.Errorf("Error converting Record ID: %s", err)
 	}
 
-	_, err = provider.client.Zones.DeleteRecord(provider.config.Account, d.Get("domain").(string), recordID)
+	_, err = provider.client.Zones.DeleteRecord(context.Background(), provider.config.Account, d.Get("domain").(string), int64(recordID))
 	if err != nil {
 		return fmt.Errorf("Error deleting DNSimple Record: %s", err)
 	}
-
 	return nil
 }
 

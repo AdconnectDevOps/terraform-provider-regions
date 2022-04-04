@@ -1,14 +1,15 @@
 package dnsimple
 
 import (
-	"log"
+	"context"
 
 	"github.com/dnsimple/dnsimple-go/dnsimple"
-	"github.com/hashicorp/terraform/terraform"
+
+	// "github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"log"
 )
 
 type Config struct {
-	Email   string
 	Account string
 	Token   string
 }
@@ -22,8 +23,11 @@ type Client struct {
 
 // Client() returns a new client for accessing dnsimple.
 func (c *Config) Client() (*Client, error) {
-	client := dnsimple.NewClient(dnsimple.NewOauthTokenCredentials(c.Token))
-	client.UserAgent = "HashiCorp-Terraform/" + terraform.VersionString()
+	tc := dnsimple.StaticTokenHTTPClient(context.Background(), c.Token)
+
+	client := dnsimple.NewClient(tc)
+	// TODO FIXED THIS
+	// client.UserAgent = "HashiCorp-Terraform/" + terraform.VersionString()
 
 	provider := &Client{
 		client: client,
