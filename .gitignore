@@ -1,1 +1,3 @@
 releases/*
+build/*
+go.sum

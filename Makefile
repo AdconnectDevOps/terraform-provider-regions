@@ -5,31 +5,35 @@ BINARY=terraform-provider-${NAME}
 VERSION=1.0.3
 OS_ARCH=linux_amd64
 
-default: release
+default: init
 
 init:
+	docker run -v `pwd`:/app -w /app -it golang:latest /bin/bash
+
+get:
 	go get 
 
 dir:
-	mkdir -p ./releases
+	mkdir -p ./build
 
-build:
+build-dev:
 	go build -o ${BINARY}
 
-release: init dir
-	GOOS=darwin GOARCH=amd64 go build -o ./releases/${BINARY}_${VERSION}_darwin_amd64
-	GOOS=freebsd GOARCH=386 go build -o ./releases/${BINARY}_${VERSION}_freebsd_386
-	GOOS=freebsd GOARCH=amd64 go build -o ./releases/${BINARY}_${VERSION}_freebsd_amd64
-	GOOS=freebsd GOARCH=arm go build -o ./releases/${BINARY}_${VERSION}_freebsd_arm
-	GOOS=linux GOARCH=386 go build -o ./releases/${BINARY}_${VERSION}_linux_386
-	GOOS=linux GOARCH=amd64 go build -o ./releases/${BINARY}_${VERSION}_linux_amd64
-	GOOS=linux GOARCH=arm go build -o ./releases/${BINARY}_${VERSION}_linux_arm
-	GOOS=openbsd GOARCH=386 go build -o ./releases/${BINARY}_${VERSION}_openbsd_386
-	GOOS=openbsd GOARCH=amd64 go build -o ./releases/${BINARY}_${VERSION}_openbsd_amd64
-	GOOS=solaris GOARCH=amd64 go build -o ./releases/${BINARY}_${VERSION}_solaris_amd64
-	GOOS=windows GOARCH=386 go build -o ./releases/${BINARY}_${VERSION}_windows_386
-	GOOS=windows GOARCH=amd64 go build -o ./releases/${BINARY}_${VERSION}_windows_amd64
+build: get dir
+	GOOS=darwin GOARCH=amd64 go build -o ./build/darwin_amd64/${BINARY}_v${VERSION}
+	GOOS=linux GOARCH=amd64 go build -o ./build/linux_amd64/${BINARY}_v${VERSION}
 
-dev: init build
+clean-build:
+	rm -rf build/
+
+create-release:
+	rm -rf build/release
+	mkdir -p build/release
+	zip -j build/release/$(BINARY)_$(VERSION)_linux_amd64.zip build/linux_amd64/$(BINARY)_v$(VERSION)
+	zip -j build/release/$(BINARY)_$(VERSION)_darwin_amd64.zip build/darwin_amd64/$(BINARY)_v$(VERSION)
+	cd build/release && shasum -a 256 *.zip > $(BINARY)_$(VERSION)_SHA256SUMS
+	gpg --detach-sign build/release/$(BINARY)_$(VERSION)_SHA256SUMS
+
+dev: get build-dev
 	mkdir -p ~/.terraform.d/plugins/${HOSTNAME}/${NAMESPACE}/${NAME}/${VERSION}/${OS_ARCH}
 	cp ${BINARY} ~/.terraform.d/plugins/${HOSTNAME}/${NAMESPACE}/${NAME}/${VERSION}/${OS_ARCH}
