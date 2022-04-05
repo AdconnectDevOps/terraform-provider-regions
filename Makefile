@@ -21,6 +21,7 @@ build-dev:
 
 build: get dir
 	GOOS=darwin GOARCH=amd64 go build -o ./build/darwin_amd64/${BINARY}_v${VERSION}
+	GOOS=darwin GOARCH=arm64 go build -o ./build/darwin_arm64/${BINARY}_v${VERSION}
 	GOOS=linux GOARCH=amd64 go build -o ./build/linux_amd64/${BINARY}_v${VERSION}
 
 clean-build:
