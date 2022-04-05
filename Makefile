@@ -32,6 +32,7 @@ create-release:
 	mkdir -p build/release
 	zip -j build/release/$(BINARY)_$(VERSION)_linux_amd64.zip build/linux_amd64/$(BINARY)_v$(VERSION)
 	zip -j build/release/$(BINARY)_$(VERSION)_darwin_amd64.zip build/darwin_amd64/$(BINARY)_v$(VERSION)
+	zip -j build/release/$(BINARY)_$(VERSION)_darwin_arm64.zip build/darwin_arm64/$(BINARY)_v$(VERSION)
 	cd build/release && shasum -a 256 *.zip > $(BINARY)_$(VERSION)_SHA256SUMS
 	gpg --detach-sign build/release/$(BINARY)_$(VERSION)_SHA256SUMS
 
