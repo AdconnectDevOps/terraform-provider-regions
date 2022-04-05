@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/hashicorp/terraform/plugin"
-	"github.com/terraform-provider-regions/dnsimple"
+	"github.com/hashicorp/terraform-plugin-sdk/plugin"
+	"github.com/mirelia/terraform-provider-regions/dnsimple"
 )
 
 func main() {
