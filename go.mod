@@ -1,6 +1,6 @@
 module github.com/mirelia/terraform-provider-regions
 
-go 1.13
+go 1.18
 
 require (
 	github.com/dnsimple/dnsimple-go main
