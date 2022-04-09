@@ -4,11 +4,18 @@ NAME=regions
 BINARY=terraform-provider-${NAME}
 VERSION=1.0.3
 OS_ARCH=linux_amd64
+TERRAFORM_VERSION=1.1.7
 
 default: init
 
 init:
 	docker run -v `pwd`:/app -w /app -it golang:latest /bin/bash
+
+setup:
+	apt update 
+	apt install unzip
+	wget https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip 
+	unzip terraform_${TERRAFORM_VERSION}_linux_amd64.zip -d /usr/bin
 
 get:
 	go get 
