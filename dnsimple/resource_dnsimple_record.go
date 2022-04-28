@@ -55,7 +55,7 @@ func resourceDNSimpleRecord() *schema.Resource {
 			},
 
 			"regions": {
-				Type: schema.TypeList,
+				Type: schema.TypeSet,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
@@ -82,7 +82,7 @@ func resourceDNSimpleRecordCreate(d *schema.ResourceData, meta interface{}) erro
 	name := d.Get("name").(string)
 	domain := d.Get("domain").(string)
 
-	regionsRaw := d.Get("regions").([]interface{})
+	regionsRaw := d.Get("regions").(*schema.Set).List()
 	regions := make([]string, len(regionsRaw))
 	for i, raw := range regionsRaw {
 		regions[i] = raw.(string)
@@ -163,7 +163,7 @@ func resourceDNSimpleRecordUpdate(d *schema.ResourceData, meta interface{}) erro
 		return fmt.Errorf("Error converting Record ID: %s", err)
 	}
 
-	regionsRaw := d.Get("regions").([]interface{})
+	regionsRaw := d.Get("regions").(*schema.Set).List()
 	regions := make([]string, len(regionsRaw))
 	for i, raw := range regionsRaw {
 		regions[i] = raw.(string)
