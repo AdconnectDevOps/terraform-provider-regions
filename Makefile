@@ -2,7 +2,7 @@ HOSTNAME=registry.terraform.io
 NAMESPACE=mirelia-dev
 NAME=regions
 BINARY=terraform-provider-${NAME}
-VERSION=1.0.3
+VERSION=1.0.4
 OS_ARCH=linux_amd64
 TERRAFORM_VERSION=1.1.7
 
