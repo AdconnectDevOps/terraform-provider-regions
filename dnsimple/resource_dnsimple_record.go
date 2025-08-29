@@ -136,7 +136,7 @@ func resourceDNSimpleRecordRead(d *schema.ResourceData, meta interface{}) error 
 		}
 		return fmt.Errorf("Couldn't find DNSimple Record: %s", err)
 	}
-	log.Printf("[INFO] DNSimple raw responce: %s", resp)
+	log.Printf("[INFO] DNSimple raw response: %+v", resp)
 
 	record := resp.Data
 	d.Set("domain_id", record.ZoneID)
